@@ -43,10 +43,15 @@ terraform {
   required_providers {
     random = ">= 2.2.0"
     aws    = ">= 2.15.0"
+    foo = {
+      source  = "https://registry.acme.com/foo"
+      version = ">= 1.0"
+    }
   }
 }
 
 resource "tls_private_key" "baz" {}
+resource "foo_resource" "baz" {}
 
 data "aws_caller_identity" "current" {
   provider = "aws"
@@ -71,4 +76,8 @@ module "foo" {
 module "baz" {
   source  = "baz"
   version = "4.5.6"
+}
+
+module "foobar" {
+  source = "git@github.com:module/path?ref=v7.8.9"
 }

@@ -58,7 +58,7 @@ func New(settings *print.Settings, items ...*Item) *Template {
 		"sanitizeAsciidocTbl": func(s string) string {
 			return sanitizeAsciidocTable(s, settings)
 		},
-		"anchorName": func(s string, t string) string {
+		"anchorNameMarkdown": func(s string, t string) string {
 			return createAnchorMarkdown(s, t, settings)
 		},
 		"anchorNameAsciidoc": func(s string, t string) string {
@@ -84,6 +84,6 @@ func (t Template) CustomFunc(funcs gotemplate.FuncMap) {
 }
 
 // Render template with given Module struct.
-func (t Template) Render(module *terraform.Module) (string, error) {
-	return t.engine.Render(module)
+func (t Template) Render(name string, module *terraform.Module) (string, error) {
+	return t.engine.Render(name, module)
 }

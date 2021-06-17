@@ -29,13 +29,13 @@ terraform-docs pretty [PATH] [flags]
   -c, --config string               config file name (default ".terraform-docs.yml")
       --footer-from string          relative path of a file to read footer from (default "")
       --header-from string          relative path of a file to read header from (default "main.tf")
-      --hide strings                hide section [data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
-      --output-file string          File in module directory to insert output into (default "")
-      --output-mode string          Output to file method [inject, replace] (default "inject")
-      --output-template string      Output template (default "<!-- BEGIN_TF_DOCS -->\n{{ .Content }}\n<!-- END_TF_DOCS -->")
+      --hide strings                hide section [all, data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
+      --output-file string          file path to insert output into (default "")
+      --output-mode string          output to file method [inject, replace] (default "inject")
+      --output-template string      output template (default "<!-- BEGIN_TF_DOCS -->\n{{ .Content }}\n<!-- END_TF_DOCS -->")
       --output-values               inject output values into outputs (default false)
       --output-values-from string   inject output values from file into outputs (default "")
-      --show strings                show section [data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
+      --show strings                show section [all, data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
       --sort                        sort items (default true)
       --sort-by string              sort items by criteria [name, required, type] (default "name")
 ```
@@ -91,11 +91,13 @@ generates the following output:
 
     requirement.terraform (>= 0.12)
     requirement.aws (>= 2.15.0)
+    requirement.foo (>= 1.0)
     requirement.random (>= 2.2.0)
 
 
     provider.aws (>= 2.15.0)
     provider.aws.ident (>= 2.15.0)
+    provider.foo (>= 1.0)
     provider.null
     provider.tls
 
@@ -103,8 +105,10 @@ generates the following output:
     module.bar (baz,4.5.6)
     module.baz (baz,4.5.6)
     module.foo (bar,1.2.3)
+    module.foobar (git@github.com:module/path,v7.8.9)
 
 
+    resource.foo_resource.baz (resource)
     resource.null_resource.foo (resource) (https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource)
     resource.tls_private_key.baz (resource) (https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key)
     data.aws_caller_identity.current (data source) (https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity)

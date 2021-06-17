@@ -35,7 +35,8 @@
   "modules": [
     "bar-baz",
     "foo-bar",
-    "baz-baz"
+    "baz-baz",
+    "foobar-git@github.com:module/path"
   ],
   "outputs": [
     "unquoted",
@@ -45,6 +46,7 @@
   ],
   "providers": [
     "tls",
+    "foo",
     "aws",
     "aws.ident",
     "null"
@@ -52,9 +54,11 @@
   "requirements": [
     "terraform",
     "aws",
+    "foo",
     "random"
   ],
   "resources": [
+    "foo_resource.baz__managed",
     "null_resource.foo__managed",
     "tls_private_key.baz__managed",
     "aws_caller_identity.current__data",

@@ -28,13 +28,13 @@ terraform-docs toml [PATH] [flags]
   -c, --config string               config file name (default ".terraform-docs.yml")
       --footer-from string          relative path of a file to read footer from (default "")
       --header-from string          relative path of a file to read header from (default "main.tf")
-      --hide strings                hide section [data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
-      --output-file string          File in module directory to insert output into (default "")
-      --output-mode string          Output to file method [inject, replace] (default "inject")
-      --output-template string      Output template (default "<!-- BEGIN_TF_DOCS -->\n{{ .Content }}\n<!-- END_TF_DOCS -->")
+      --hide strings                hide section [all, data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
+      --output-file string          file path to insert output into (default "")
+      --output-mode string          output to file method [inject, replace] (default "inject")
+      --output-template string      output template (default "<!-- BEGIN_TF_DOCS -->\n{{ .Content }}\n<!-- END_TF_DOCS -->")
       --output-values               inject output values into outputs (default false)
       --output-values-from string   inject output values from file into outputs (default "")
-      --show strings                show section [data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
+      --show strings                show section [all, data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
       --sort                        sort items (default true)
       --sort-by string              sort items by criteria [name, required, type] (default "name")
 ```
@@ -296,6 +296,11 @@ generates the following output:
       source = "bar"
       version = "1.2.3"
 
+    [[modules]]
+      name = "foobar"
+      source = "git@github.com:module/path"
+      version = "v7.8.9"
+
     [[outputs]]
       name = "output-0.12"
       description = "terraform 0.12 only"
@@ -323,6 +328,11 @@ generates the following output:
       version = ">= 2.15.0"
 
     [[providers]]
+      name = "foo"
+      alias = ""
+      version = ">= 1.0"
+
+    [[providers]]
       name = "null"
       alias = ""
       version = ""
@@ -341,8 +351,20 @@ generates the following output:
       version = ">= 2.15.0"
 
     [[requirements]]
+      name = "foo"
+      version = ">= 1.0"
+
+    [[requirements]]
       name = "random"
       version = ">= 2.2.0"
+
+    [[resources]]
+      type = "resource"
+      name = "baz"
+      provider = "foo"
+      source = "https://registry.acme.com/foo"
+      mode = "managed"
+      version = "latest"
 
     [[resources]]
       type = "resource"

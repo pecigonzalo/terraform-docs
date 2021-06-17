@@ -30,16 +30,16 @@ terraform-docs asciidoc table [PATH] [flags]
       --default                     show Default column or section (default true)
       --footer-from string          relative path of a file to read footer from (default "")
       --header-from string          relative path of a file to read header from (default "main.tf")
-      --hide strings                hide section [data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
+      --hide strings                hide section [all, data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
       --indent int                  indention level of AsciiDoc sections [1, 2, 3, 4, 5] (default 2)
-      --output-file string          File in module directory to insert output into (default "")
-      --output-mode string          Output to file method [inject, replace] (default "inject")
-      --output-template string      Output template (default "<!-- BEGIN_TF_DOCS -->\n{{ .Content }}\n<!-- END_TF_DOCS -->")
+      --output-file string          file path to insert output into (default "")
+      --output-mode string          output to file method [inject, replace] (default "inject")
+      --output-template string      output template (default "<!-- BEGIN_TF_DOCS -->\n{{ .Content }}\n<!-- END_TF_DOCS -->")
       --output-values               inject output values into outputs (default false)
       --output-values-from string   inject output values from file into outputs (default "")
       --required                    show Required column or section (default true)
       --sensitive                   show Sensitive column or section (default true)
-      --show strings                show section [data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
+      --show strings                show section [all, data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
       --sort                        sort items (default true)
       --sort-by string              sort items by criteria [name, required, type] (default "name")
       --type                        show Type column or section (default true)
@@ -100,6 +100,7 @@ generates the following output:
     |Name |Version
     |[[requirement_terraform]] <<requirement_terraform,terraform>> |>= 0.12
     |[[requirement_aws]] <<requirement_aws,aws>> |>= 2.15.0
+    |[[requirement_foo]] <<requirement_foo,foo>> |>= 1.0
     |[[requirement_random]] <<requirement_random,random>> |>= 2.2.0
     |===
 
@@ -110,6 +111,7 @@ generates the following output:
     |Name |Version
     |[[provider_aws]] <<provider_aws,aws>> |>= 2.15.0
     |[[provider_aws.ident]] <<provider_aws.ident,aws.ident>> |>= 2.15.0
+    |[[provider_foo]] <<provider_foo,foo>> |>= 1.0
     |[[provider_null]] <<provider_null,null>> |n/a
     |[[provider_tls]] <<provider_tls,tls>> |n/a
     |===
@@ -118,10 +120,11 @@ generates the following output:
 
     [cols="a,a,a",options="header,autowidth"]
     |===
-    |Name|Source|Version|
-    |[[module_bar]] <<module_bar,bar>>|baz|4.5.6
-    |[[module_baz]] <<module_baz,baz>>|baz|4.5.6
-    |[[module_foo]] <<module_foo,foo>>|bar|1.2.3
+    |Name |Source |Version
+    |[[module_bar]] <<module_bar,bar>> |baz |4.5.6
+    |[[module_baz]] <<module_baz,baz>> |baz |4.5.6
+    |[[module_foo]] <<module_foo,foo>> |bar |1.2.3
+    |[[module_foobar]] <<module_foobar,foobar>> |git@github.com:module/path |v7.8.9
     |===
 
     == Resources
@@ -129,6 +132,7 @@ generates the following output:
     [cols="a,a",options="header,autowidth"]
     |===
     |Name |Type
+    |foo_resource.baz |resource
     |https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource[null_resource.foo] |resource
     |https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key[tls_private_key.baz] |resource
     |https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity[aws_caller_identity.current] |data source

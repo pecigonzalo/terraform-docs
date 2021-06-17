@@ -11,28 +11,34 @@ the root directory of this source tree.
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 
+	goversion "github.com/hashicorp/go-version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	pluginsdk "github.com/terraform-docs/plugin-sdk/plugin"
 	"github.com/terraform-docs/terraform-docs/internal/format"
 	"github.com/terraform-docs/terraform-docs/internal/plugin"
 	"github.com/terraform-docs/terraform-docs/internal/terraform"
+	"github.com/terraform-docs/terraform-docs/internal/version"
 )
-
-// list of flagset items which are explicitly changed from CLI
-var changedfs = make(map[string]bool)
 
 // PreRunEFunc returns actual 'cobra.Command#PreRunE' function for 'formatter'
 // commands. This functions reads and normalizes flags and arguments passed
 // through CLI execution.
-func PreRunEFunc(config *Config) func(*cobra.Command, []string) error {
+func PreRunEFunc(config *Config) func(*cobra.Command, []string) error { //nolint:gocyclo
+	// NOTE(khos2ow): this function is over our cyclomatic complexity goal.
+	// Be wary when adding branches, and look for functionality that could
+	// be reasonably moved into an injected dependency.
+
 	return func(cmd *cobra.Command, args []string) error {
+		config.isFlagChanged = cmd.Flags().Changed
+
 		formatter := cmd.Annotations["command"]
 
 		// root command must have an argument, otherwise we're going to show help
@@ -41,33 +47,50 @@ func PreRunEFunc(config *Config) func(*cobra.Command, []string) error {
 			os.Exit(0)
 		}
 
-		cmd.Flags().VisitAll(func(f *pflag.Flag) {
-			changedfs[f.Name] = f.Changed
-		})
-
-		// read config file if provided and/or available
+		// this can only happen in one way: terraform-docs -c "" /path/to/module
 		if config.File == "" {
-			return fmt.Errorf("value of '--config' can't be empty")
+			return errors.New("value of '--config' can't be empty")
 		}
 
-		file := filepath.Join(args[0], config.File)
-		cfgreader := &cfgreader{
-			file:   file,
-			config: config,
+		v := viper.New()
+
+		if config.isFlagChanged("config") {
+			v.SetConfigFile(config.File)
+		} else {
+			v.SetConfigName(".terraform-docs")
+			v.SetConfigType("yml")
 		}
 
-		if found, err := cfgreader.exist(); !found {
-			// config is explicitly provided and file not found, this is an error
-			if changedfs["config"] {
+		v.AddConfigPath(args[0])           // first look at module root
+		v.AddConfigPath(".")               // then current directory
+		v.AddConfigPath("$HOME/.tfdocs.d") // and finally $HOME/.tfdocs.d/
+
+		if err := v.ReadInConfig(); err != nil {
+			var perr *os.PathError
+			if errors.As(err, &perr) {
+				return fmt.Errorf("config file %s not found", config.File)
+			}
+
+			var cerr viper.ConfigFileNotFoundError
+			if !errors.As(err, &cerr) {
 				return err
 			}
-			// config is not provided and file not found, only show an error for the root command
+
+			// config is not provided, only show error for root command
 			if formatter == "root" {
 				cmd.Help() //nolint:errcheck,gosec
 				os.Exit(0)
 			}
-		} else if err := cfgreader.parse(); err != nil {
-			// config file is found, we're now going to parse it
+		}
+
+		// bind flags to viper
+		bindFlags(cmd, v)
+
+		if err := v.Unmarshal(config); err != nil {
+			return fmt.Errorf("unable to decode config, %w", err)
+		}
+
+		if err := checkConstraint(config.Version, version.Core()); err != nil {
 			return err
 		}
 
@@ -79,16 +102,11 @@ func PreRunEFunc(config *Config) func(*cobra.Command, []string) error {
 			config.Formatter = formatter
 		}
 
-		config.process()
+		// set the module root directory
+		config.moduleRoot = args[0]
 
-		if err := config.validate(); err != nil {
-			return err
-		}
-
-		// set the base module directory
-		config.BaseDir = args[0]
-
-		return nil
+		// process and validate configuration
+		return config.process()
 	}
 }
 
@@ -98,14 +116,14 @@ func PreRunEFunc(config *Config) func(*cobra.Command, []string) error {
 func RunEFunc(config *Config) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		settings, options := config.extract()
-		options.Path = config.BaseDir
+		options.Path = config.moduleRoot
 
 		module, err := terraform.LoadWithOptions(options)
 		if err != nil {
 			return err
 		}
 
-		printer, err := format.Factory(config.Formatter, settings)
+		formatter, err := format.Factory(config.Formatter, settings)
 		if err != nil {
 			plugins, perr := plugin.Discover()
 			if perr != nil {
@@ -127,12 +145,75 @@ func RunEFunc(config *Config) func(*cobra.Command, []string) error {
 			return writeContent(config, content)
 		}
 
-		content, err := printer.Print(module, settings)
+		generator, err := formatter.Generate(module)
 		if err != nil {
 			return err
 		}
+		generator.Path(config.moduleRoot)
+
+		content, err := generator.ExecuteTemplate(config.Content)
+		if err != nil {
+			return err
+		}
+
 		return writeContent(config, content)
 	}
+}
+
+// bindFlags binds current command's changed flags to viper
+func bindFlags(cmd *cobra.Command, v *viper.Viper) {
+	sectionsCleared := false
+	fs := cmd.Flags()
+	fs.VisitAll(func(f *pflag.Flag) {
+		if !f.Changed {
+			return
+		}
+
+		switch f.Name {
+		case "show", "hide":
+			// If '--show' or '--hide' CLI flag is used, explicitly override and remove
+			// all items from 'show' and 'hide' set in '.terraform-doc.yml'.
+			if !sectionsCleared {
+				v.Set("sections.show", []string{})
+				v.Set("sections.hide", []string{})
+				sectionsCleared = true
+			}
+
+			items, err := fs.GetStringSlice(f.Name)
+			if err != nil {
+				return
+			}
+			v.Set(flagMappings[f.Name], items)
+		case "sort-by-required", "sort-by-type":
+			v.Set("sort.by", flagMappings[f.Name])
+		default:
+			if _, ok := flagMappings[f.Name]; !ok {
+				return
+			}
+			v.Set(flagMappings[f.Name], f.Value)
+		}
+	})
+}
+
+// checkConstraint validates if current version of terraform-docs being executed
+// is valid against 'version' string provided in config file, and fail if the
+// constraints is violated.
+func checkConstraint(versionRange string, currentVersion string) error {
+	if versionRange == "" {
+		return nil
+	}
+
+	semver, err := goversion.NewSemver(currentVersion)
+	if err != nil {
+		return err
+	}
+
+	constraint, err := goversion.NewConstraint(versionRange)
+	if err != nil || !constraint.Check(semver) {
+		return fmt.Errorf("current version: %s, constraints: '%s'", semver, constraint)
+	}
+
+	return nil
 }
 
 // writeContent to a Writer. This can either be os.Stdout or specific
@@ -144,13 +225,13 @@ func writeContent(config *Config, content string) error {
 	if config.Output.File != "" {
 		w = &fileWriter{
 			file: config.Output.File,
-			dir:  config.BaseDir,
+			dir:  config.moduleRoot,
 
 			mode: config.Output.Mode,
 
 			template: config.Output.Template,
-			begin:    config.Output.BeginComment,
-			end:      config.Output.EndComment,
+			begin:    config.Output.beginComment,
+			end:      config.Output.endComment,
 		}
 	} else {
 		// writing to stdout

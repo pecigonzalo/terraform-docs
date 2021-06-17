@@ -28,13 +28,13 @@ terraform-docs xml [PATH] [flags]
   -c, --config string               config file name (default ".terraform-docs.yml")
       --footer-from string          relative path of a file to read footer from (default "")
       --header-from string          relative path of a file to read header from (default "main.tf")
-      --hide strings                hide section [data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
-      --output-file string          File in module directory to insert output into (default "")
-      --output-mode string          Output to file method [inject, replace] (default "inject")
-      --output-template string      Output template (default "<!-- BEGIN_TF_DOCS -->\n{{ .Content }}\n<!-- END_TF_DOCS -->")
+      --hide strings                hide section [all, data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
+      --output-file string          file path to insert output into (default "")
+      --output-mode string          output to file method [inject, replace] (default "inject")
+      --output-template string      output template (default "<!-- BEGIN_TF_DOCS -->\n{{ .Content }}\n<!-- END_TF_DOCS -->")
       --output-values               inject output values into outputs (default false)
       --output-values-from string   inject output values from file into outputs (default "")
-      --show strings                show section [data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
+      --show strings                show section [all, data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
       --sort                        sort items (default true)
       --sort-by string              sort items by criteria [name, required, type] (default "name")
 ```
@@ -312,6 +312,11 @@ generates the following output:
           <source>bar</source>
           <version>1.2.3</version>
         </module>
+        <module>
+          <name>foobar</name>
+          <source>git@github.com:module/path</source>
+          <version>v7.8.9</version>
+        </module>
       </modules>
       <outputs>
         <output>
@@ -343,6 +348,11 @@ generates the following output:
           <version>&gt;= 2.15.0</version>
         </provider>
         <provider>
+          <name>foo</name>
+          <alias xsi:nil="true"></alias>
+          <version>&gt;= 1.0</version>
+        </provider>
+        <provider>
           <name>null</name>
           <alias xsi:nil="true"></alias>
           <version xsi:nil="true"></version>
@@ -363,11 +373,23 @@ generates the following output:
           <version>&gt;= 2.15.0</version>
         </requirement>
         <requirement>
+          <name>foo</name>
+          <version>&gt;= 1.0</version>
+        </requirement>
+        <requirement>
           <name>random</name>
           <version>&gt;= 2.2.0</version>
         </requirement>
       </requirements>
       <resources>
+        <resource>
+          <type>resource</type>
+          <name>baz</name>
+          <provider>foo</provider>
+          <source>https://registry.acme.com/foo</source>
+          <mode>managed</mode>
+          <version>latest</version>
+        </resource>
         <resource>
           <type>resource</type>
           <name>foo</name>

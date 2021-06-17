@@ -23,6 +23,7 @@ terraform-docs markdown [PATH] [flags]
       --default      show Default column or section (default true)
       --escape       escape special characters (default true)
   -h, --help         help for markdown
+      --html         use HTML tags in genereted output (default true)
       --indent int   indention level of Markdown sections [1, 2, 3, 4, 5] (default 2)
       --required     show Required column or section (default true)
       --sensitive    show Sensitive column or section (default true)
@@ -35,13 +36,13 @@ terraform-docs markdown [PATH] [flags]
   -c, --config string               config file name (default ".terraform-docs.yml")
       --footer-from string          relative path of a file to read footer from (default "")
       --header-from string          relative path of a file to read header from (default "main.tf")
-      --hide strings                hide section [data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
-      --output-file string          File in module directory to insert output into (default "")
-      --output-mode string          Output to file method [inject, replace] (default "inject")
-      --output-template string      Output template (default "<!-- BEGIN_TF_DOCS -->\n{{ .Content }}\n<!-- END_TF_DOCS -->")
+      --hide strings                hide section [all, data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
+      --output-file string          file path to insert output into (default "")
+      --output-mode string          output to file method [inject, replace] (default "inject")
+      --output-template string      output template (default "<!-- BEGIN_TF_DOCS -->\n{{ .Content }}\n<!-- END_TF_DOCS -->")
       --output-values               inject output values into outputs (default false)
       --output-values-from string   inject output values from file into outputs (default "")
-      --show strings                show section [data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
+      --show strings                show section [all, data-sources, footer, header, inputs, modules, outputs, providers, requirements, resources]
       --sort                        sort items (default true)
       --sort-by string              sort items by criteria [name, required, type] (default "name")
 ```

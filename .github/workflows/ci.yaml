@@ -7,7 +7,7 @@ on:
   pull_request:
 
 env:
-  GO_VERSION: "1.16"
+  GO_VERSION: "1.16.4"
   REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
 
 jobs:
@@ -70,6 +70,14 @@ jobs:
 
       - name: Run Staticcheck
         run: make staticcheck
+
+      - name: Check License headers
+        run: |
+          GO111MODULE=off go get github.com/google/addlicense
+
+          addlicense -check $(find . -type f -name "*.go")
+          addlicense -check $(find . -type f -name "*.sh")
+          addlicense -check $(find . -type f -name "Dockerfile")
 
       - name: Check docs
         if: "!contains(github.ref, 'refs/heads/master')"
